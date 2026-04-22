@@ -139,11 +139,11 @@ class Game:
 
     def _init_menu(self):
         cx = SCREEN_W // 2
+        # [ИЗМЕНЕНИЕ] Удалён одиночный режим — только LAN-кооператив и выбор уровня
         self.menu_btns = [
-            Button((cx-130, 220, 260, 54), "Играть (одиночно)", C_PLATFORM),
-            Button((cx-130, 290, 260, 54), "Мультиплеер (LAN)", C_PLATFORM),
-            Button((cx-130, 360, 260, 54), "Выбор уровня",      C_PLATFORM),
-            Button((cx-130, 430, 260, 54), "Выход",             (80, 30, 30)),
+            Button((cx-130, 240, 260, 54), "Мультиплеер (LAN)", C_PLATFORM),
+            Button((cx-130, 310, 260, 54), "Выбор уровня",      C_PLATFORM),
+            Button((cx-130, 380, 260, 54), "Выход",             (80, 30, 30)),
         ]
         self.level_btns = [
             Button((cx-200 + (i%5)*90, 200 + (i//5)*90, 75, 55),
@@ -203,34 +203,38 @@ class Game:
         for b in self.menu_btns:
             b.update(mx, my)
         for e in events:
-            if self.menu_btns[0].clicked(e):   # Одиночно
-                self.net = None
-                self.player_type = PlayerType.FIRE
-                self._start_level(self.level_idx)
-            if self.menu_btns[1].clicked(e):   # Мультиплеер
+            # [ИЗМЕНЕНИЕ] Одиночный режим удалён — индексы сдвинуты
+            if self.menu_btns[0].clicked(e):   # Мультиплеер
                 self.state = GameState.NET_SETUP
-            if self.menu_btns[2].clicked(e):   # Выбор уровня
+            if self.menu_btns[1].clicked(e):   # Выбор уровня
                 self.state = GameState.LEVEL_SELECT
-            if self.menu_btns[3].clicked(e):   # Выход
+            if self.menu_btns[2].clicked(e):   # Выход
                 self._quit()
 
     def _draw_menu(self):
         self._draw_bg()
-        title = self.font_big.render("Огонь  и  Вода", True, C_WHITE)
-        self.screen.blit(title, title.get_rect(center=(SCREEN_W//2, 130)))
+        title = self.font_big.render("Ogon  i  Voda", True, C_WHITE)
+        self.screen.blit(title, title.get_rect(center=(SCREEN_W//2, 120)))
         # Подзаголовок
-        sub = self.font_small.render("Кооперативный платформер", True, C_GRAY)
-        self.screen.blit(sub, sub.get_rect(center=(SCREEN_W//2, 180)))
-        # Анимированные символы
-        phase = self.anim_tick * 0.05
+        sub = self.font_small.render("Kooperativny platformer", True, C_GRAY)
+        self.screen.blit(sub, sub.get_rect(center=(SCREEN_W//2, 175)))
+
+        # [ИЗМЕНЕНИЕ] Эмодзи заменены на цветные прямоугольники-иконки
         import math
-        fy = 130 + int(math.sin(phase) * 8)
-        wy = 130 + int(math.sin(phase + 3.14) * 8)
-        fire_lbl = self.font_big.render("🔥", True, C_FIRE)
-        water_lbl = self.font_big.render("💧", True, C_WATER)
-        self.screen.blit(fire_lbl,  (SCREEN_W//2 - 230, fy))
-        self.screen.blit(water_lbl, (SCREEN_W//2 + 170, wy))
-        mx, my = pygame.mouse.get_pos()
+        phase = self.anim_tick * 0.05
+        fy = 120 + int(math.sin(phase) * 8)
+        wy = 120 + int(math.sin(phase + 3.14) * 8)
+        # Иконка огня (оранжевый треугольник)
+        fire_x, fire_y = SCREEN_W//2 - 240, fy - 20
+        pygame.draw.polygon(self.screen, C_FIRE,
+                            [(fire_x+20, fire_y), (fire_x, fire_y+40), (fire_x+40, fire_y+40)])
+        pygame.draw.polygon(self.screen, C_FIRE2,
+                            [(fire_x+20, fire_y+8), (fire_x+8, fire_y+40), (fire_x+32, fire_y+40)])
+        # Иконка воды (синий круг + волна)
+        water_x, water_y = SCREEN_W//2 + 190, wy
+        pygame.draw.circle(self.screen, C_WATER, (water_x+20, water_y+20), 20)
+        pygame.draw.circle(self.screen, C_WATER2, (water_x+20, water_y+20), 12)
+
         for b in self.menu_btns:
             b.draw(self.screen, self.font_mid)
 
@@ -341,18 +345,19 @@ class Game:
 
     def _draw_role_show(self):
         self._draw_bg()
+        # [ИЗМЕНЕНИЕ] Эмодзи заменены на текст
         if self.player_type == PlayerType.FIRE:
             color = C_FIRE
-            name  = "Огонь 🔥"
-            ctrl  = "Управление: WASD"
-            rule  = "Избегай воды и луж!"
+            name  = "OGON  [FIRE]"
+            ctrl  = "Upravlenie: WASD"
+            rule  = "Izbegay vody i luzh!"
         else:
             color = C_WATER
-            name  = "Вода 💧"
-            ctrl  = "Управление: ← → ↑"
-            rule  = "Избегай огня и лавы!"
+            name  = "VODA  [WATER]"
+            ctrl  = "Upravlenie: strelki"
+            rule  = "Izbegay ognya i lavy!"
 
-        lbl = self.font_big.render(f"Ты играешь за {name}", True, color)
+        lbl = self.font_big.render(f"Ty igraesh za {name}", True, color)
         self.screen.blit(lbl, lbl.get_rect(center=(SCREEN_W//2, SCREEN_H//2 - 40)))
         c = self.font_mid.render(ctrl, True, C_WHITE)
         self.screen.blit(c, c.get_rect(center=(SCREEN_W//2, SCREEN_H//2 + 30)))
@@ -360,7 +365,8 @@ class Game:
         self.screen.blit(r, r.get_rect(center=(SCREEN_W//2, SCREEN_H//2 + 75)))
 
         bar_w = int((self.role_timer / 2.5) * 300)
-        pygame.draw.rect(self.screen, color, (SCREEN_W//2 - 150, SCREEN_H//2 + 120, bar_w, 6), border_radius=3)
+        pygame.draw.rect(self.screen, color,
+                         (SCREEN_W//2 - 150, SCREEN_H//2 + 120, bar_w, 6), border_radius=3)
 
     # ──────────────────── START LEVEL ────────────────────
     def _start_level(self, idx):
@@ -384,7 +390,6 @@ class Game:
     def _update_playing(self, dt, events):
         keys = pygame.key.get_pressed()
 
-        # ESC = меню
         for e in events:
             if e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
                 self.state = GameState.MENU
@@ -392,6 +397,12 @@ class Game:
             if e.type == pygame.KEYDOWN and e.key == pygame.K_r:
                 self._start_level(self.level_idx)
                 return
+
+        # [ИЗМЕНЕНИЕ] Только мультиплеер — нет одиночного режима
+        if not self.net or not self.net.is_connected():
+            # Сеть потеряна — показываем меню
+            self.state = GameState.MENU
+            return
 
         local = self.players[self.player_type]
         remote_type = PlayerType.WATER if self.player_type == PlayerType.FIRE else PlayerType.FIRE
@@ -403,34 +414,24 @@ class Game:
         else:
             local.handle_input_arrows(keys)
 
-        # Сетевой ввод
-        if self.net and self.net.is_connected():
-            self.net.send_state(local.x, local.y, local.vx, local.vy, local.on_ground)
-            data = self.net.recv_state()
-            if data:
-                remote.x, remote.y, remote.vx, remote.vy, remote.on_ground = data
-        else:
-            # Одиночная игра: вторым персонажем управляет ИИ (просто стоит)
-            if self.player_type == PlayerType.FIRE:
-                remote.handle_input_arrows(keys)
-            else:
-                remote.handle_input_wasd(keys)
+        # Синхронизация по сети
+        self.net.send_state(local.x, local.y, local.vx, local.vy, local.on_ground)
+        data = self.net.recv_state()
+        if data:
+            remote.x, remote.y, remote.vx, remote.vy, remote.on_ground = data
 
         platforms = self.level_data["platforms"]
-
         for p in self.players.values():
             p.update(dt, platforms)
 
         self._update_buttons()
         self._update_particles(dt)
 
-        # Проверка смерти
         if self._check_death():
             self.dead_timer = 2.0
             self.state = GameState.DEAD
             return
 
-        # Проверка победы
         if self._check_win():
             self.win_timer = 3.0
             self.state = GameState.WIN
@@ -453,27 +454,28 @@ class Game:
             self.doors_state[d["id"]] = all(self.buttons_state.get(r, False) for r in required)
 
     def _check_death(self):
-        traps = self.level_data.get("traps", [])
+        traps   = self.level_data.get("traps", [])
         fire_p  = self.players[PlayerType.FIRE]
         water_p = self.players[PlayerType.WATER]
+        fire_r  = pygame.Rect(fire_p.x,  fire_p.y,  fire_p.w,  fire_p.h)
+        water_r = pygame.Rect(water_p.x, water_p.y, water_p.w, water_p.h)
 
         for t in traps:
             tr = pygame.Rect(t["x"]*TILE, t["y"]*TILE, t["w"]*TILE, t["h"]*TILE)
             if t["type"] == "lava":
-                if pygame.Rect(fire_p.x, fire_p.y, fire_p.w, fire_p.h).colliderect(tr):
-                    return True   # Огонь не выживает в лаве — нет, подождите: огонь ок с лавой
-                # Вода погибает в лаве
-                if pygame.Rect(water_p.x, water_p.y, water_p.w, water_p.h).colliderect(tr):
+                # [ИЗМЕНЕНИЕ] Огонь НЕ погибает в лаве — только Вода
+                if water_r.colliderect(tr):
                     return True
             elif t["type"] == "pool":
-                # Огонь погибает в воде
-                if pygame.Rect(fire_p.x, fire_p.y, fire_p.w, fire_p.h).colliderect(tr):
+                # Огонь погибает в луже; Вода — нет
+                if fire_r.colliderect(tr):
                     return True
-                # Вода ок с бассейном
-        # Огонь касается воды (персонажи)
-        fr = pygame.Rect(fire_p.x,  fire_p.y,  fire_p.w,  fire_p.h)
-        wr = pygame.Rect(water_p.x, water_p.y, water_p.w, water_p.h)
-        if fr.colliderect(wr):
+
+        # [ИЗМЕНЕНИЕ] Коллизия персонажей: при соприкосновении — смерть обоих
+        # Используем слегка уменьшенный hitbox чтобы исключить ложные срабатывания на соседних платформах
+        fire_inner  = pygame.Rect(fire_p.x + 4,  fire_p.y + 4,  fire_p.w - 8,  fire_p.h - 4)
+        water_inner = pygame.Rect(water_p.x + 4, water_p.y + 4, water_p.w - 8, water_p.h - 4)
+        if fire_inner.colliderect(water_inner):
             return True
 
         # Падение за экран
@@ -553,6 +555,7 @@ class Game:
             col = C_BTN_ON if pressed else (C_BTN_F if b["type"] == "fire" else C_BTN_W)
             r = pygame.Rect(b["x"]*TILE, b["y"]*TILE, TILE, TILE//2)
             pygame.draw.rect(self.screen, col, r, border_radius=4)
+            # [ИЗМЕНЕНИЕ] Эмодзи заменены на текст
             lbl = self.font_tiny.render("BTN", True, C_WHITE)
             self.screen.blit(lbl, lbl.get_rect(center=r.center))
 
@@ -564,7 +567,10 @@ class Game:
             col = C_DOOR_F if d["type"] == "fire" else C_DOOR_W
             r = pygame.Rect(d["x"]*TILE, d["y"]*TILE, TILE, d["h"]*TILE)
             pygame.draw.rect(self.screen, col, r, border_radius=4)
-            lbl = self.font_tiny.render("🚪", True, C_WHITE)
+            # [ИЗМЕНЕНИЕ] Эмодзи двери заменена на полосатый узор
+            for stripe_y in range(r.y + 4, r.y + r.height - 4, 8):
+                pygame.draw.line(self.screen, C_WHITE, (r.x + 4, stripe_y), (r.x + r.width - 4, stripe_y), 1)
+            lbl = self.font_tiny.render("DOOR", True, C_WHITE)
             self.screen.blit(lbl, lbl.get_rect(center=r.center))
 
         # Выходы
@@ -576,21 +582,21 @@ class Game:
             gcol = tuple(min(255, int(c + glow)) for c in col)
             pygame.draw.rect(self.screen, gcol, r, border_radius=6)
             pygame.draw.rect(self.screen, C_WHITE, r, 2, border_radius=6)
-            icon = "🔥" if ex["type"] == "fire" else "💧"
-            lbl = self.font_small.render(icon, True, C_WHITE)
+            # [ИЗМЕНЕНИЕ] Эмодзи заменены на букву F / W
+            icon_text = "F" if ex["type"] == "fire" else "W"
+            icon_col  = C_FIRE2 if ex["type"] == "fire" else C_WATER2
+            lbl = self.font_mid.render(icon_text, True, icon_col)
             self.screen.blit(lbl, lbl.get_rect(center=r.center))
 
     def _draw_hud(self):
-        # Уровень
-        lv = self.font_small.render(f"Уровень {self.level_idx+1}", True, C_WHITE)
+        # [ИЗМЕНЕНИЕ] Эмодзи в HUD заменены на текст
+        lv = self.font_small.render(f"Level {self.level_idx+1}", True, C_WHITE)
         self.screen.blit(lv, (10, 10))
-        # Роль
-        role_name = "Огонь 🔥" if self.player_type == PlayerType.FIRE else "Вода 💧"
+        role_name = "FIRE" if self.player_type == PlayerType.FIRE else "WATER"
         role_col  = C_FIRE if self.player_type == PlayerType.FIRE else C_WATER
-        rl = self.font_small.render(f"Ты: {role_name}", True, role_col)
+        rl = self.font_small.render(f"You: {role_name}", True, role_col)
         self.screen.blit(rl, (SCREEN_W - rl.get_width() - 10, 10))
-        # Подсказки
-        hints = ["R — перезапуск", "ESC — меню"]
+        hints = ["R - restart", "ESC - menu"]
         for i, h in enumerate(hints):
             lbl = self.font_tiny.render(h, True, C_GRAY)
             self.screen.blit(lbl, (10, SCREEN_H - 20 - i*18))
@@ -610,12 +616,15 @@ class Game:
 
     def _draw_win(self):
         self._draw_playing()
-        overlay = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 140))
+        # [ИЗМЕНЕНИЕ] Убран SRCALPHA (требует специального display mode) — используем fill с alpha через set_alpha
+        overlay = pygame.Surface((SCREEN_W, SCREEN_H))
+        overlay.set_alpha(140)
+        overlay.fill((0, 0, 0))
         self.screen.blit(overlay, (0, 0))
-        lbl = self.font_big.render("🎉  Победа!", True, C_YELLOW)
+        # [ИЗМЕНЕНИЕ] Эмодзи заменены на текст
+        lbl = self.font_big.render("*** POBEDA! ***", True, C_YELLOW)
         self.screen.blit(lbl, lbl.get_rect(center=(SCREEN_W//2, SCREEN_H//2 - 40)))
-        hint = self.font_mid.render("Enter — следующий | R — заново | ESC — меню", True, C_WHITE)
+        hint = self.font_mid.render("Enter - next  |  R - retry  |  ESC - menu", True, C_WHITE)
         self.screen.blit(hint, hint.get_rect(center=(SCREEN_W//2, SCREEN_H//2 + 30)))
 
     def _update_dead(self, dt, events):
@@ -629,12 +638,14 @@ class Game:
 
     def _draw_dead(self):
         self._draw_playing()
-        overlay = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
-        overlay.fill((80, 0, 0, 140))
+        overlay = pygame.Surface((SCREEN_W, SCREEN_H))
+        overlay.set_alpha(140)
+        overlay.fill((80, 0, 0))
         self.screen.blit(overlay, (0, 0))
-        lbl = self.font_big.render("💀  Конец игры", True, C_RED)
+        # [ИЗМЕНЕНИЕ] Эмодзи заменены на текст
+        lbl = self.font_big.render("--- GAME OVER ---", True, C_RED)
         self.screen.blit(lbl, lbl.get_rect(center=(SCREEN_W//2, SCREEN_H//2 - 40)))
-        hint = self.font_mid.render("R / Enter — заново | ESC — меню", True, C_WHITE)
+        hint = self.font_mid.render("R / Enter - retry  |  ESC - menu", True, C_WHITE)
         self.screen.blit(hint, hint.get_rect(center=(SCREEN_W//2, SCREEN_H//2 + 30)))
 
     # ──────────────────── Общий фон ────────────────────
